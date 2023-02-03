@@ -208,7 +208,9 @@ def handle_customer_info(update: Update, context: CallbackContext, redis_client)
         text=f'Вы указали: {customer_email}. Напишем вам в течение 24 часов.',
     )
 
-    return 'HANDLE_CUSTOMER_INFO'
+    next_state = display_main_menu(update, context, redis_client)
+
+    return next_state
 
 
 def handle_users_reply(update: Update, context: CallbackContext, redis_client):
