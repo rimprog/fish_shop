@@ -263,7 +263,7 @@ def main():
     logger.addHandler(TelegramLogsHandler(logger_tg_bot, developer_chat_id))
 
     redis_url = os.getenv('REDIS_URL')
-    redis_client = redis.from_url(redis_url, db=0, decode_responses=True)
+    redis_client = redis.from_url(redis_url, decode_responses=True)
 
     moltin_client_id = os.getenv('MOLTIN_CLIENT_ID')
     moltin_client_secret = os.getenv('MOLTIN_CLIENT_SECRET')
