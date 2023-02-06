@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import redis
 
 from utils.telegram_logger import TelegramLogsHandler
-from utils.moltin_helper import (get_access_token, get_products, get_file,
+from utils.moltin_helper import (create_access_token, get_products, get_file,
                                  add_product_to_cart, get_cart, get_cart_items,
                                  remove_cart_item, create_customer)
 
@@ -19,7 +19,7 @@ logger = logging.getLogger('Telegram logger')
 
 
 def display_main_menu(update: Update, context: CallbackContext, redis_client):
-    moltin_access_token = redis_client.get('moltin_access_token')
+    moltin_access_token = redis_client.hgetall('moltin:access:token')
     products = get_products(moltin_access_token)['data']
 
     product_names_with_ids = [(product['name'], product['id']) for product in products]
@@ -63,7 +63,7 @@ def handle_main_menu(update: Update, context: CallbackContext, redis_client):
 def display_description(update: Update, context: CallbackContext, redis_client):
     query = update.callback_query
 
-    moltin_access_token = redis_client.get('moltin_access_token')
+    moltin_access_token = redis_client.hgetall('moltin:access:token')
     product = get_products(moltin_access_token, query.data)['data']
 
     file_id = product['relationships']['main_image']['data']['id']
@@ -107,7 +107,7 @@ def handle_description(update: Update, context: CallbackContext, redis_client):
             message_id=query.message.message_id
         )
     else:
-        moltin_access_token = redis_client.get('moltin_access_token')
+        moltin_access_token = redis_client.hgetall('moltin:access:token')
 
         product_id = query.data.split(' ')[-1]
         product = get_products(moltin_access_token, product_id)['data']
@@ -126,7 +126,7 @@ def handle_description(update: Update, context: CallbackContext, redis_client):
 def display_cart(update: Update, context: CallbackContext, redis_client):
     query = update.callback_query
 
-    moltin_access_token = redis_client.get('moltin_access_token')
+    moltin_access_token = redis_client.hgetall('moltin:access:token')
     cart_id = query.message.chat_id
     cart = get_cart(moltin_access_token, cart_id)
     cart_items = get_cart_items(moltin_access_token, cart_id)
@@ -172,7 +172,7 @@ def handle_cart(update: Update, context: CallbackContext, redis_client):
     elif query.data == 'customer_info':
         next_state = request_customer_info(update, context, redis_client)
     else:
-        moltin_access_token = redis_client.get('moltin_access_token')
+        moltin_access_token = redis_client.hgetall('moltin:access:token')
         cart_id = query.message.chat_id
         remove_cart_item(moltin_access_token, cart_id, query.data)
 
@@ -198,7 +198,7 @@ def request_customer_info(update: Update, context: CallbackContext, redis_client
 
 
 def handle_customer_info(update: Update, context: CallbackContext, redis_client):
-    moltin_access_token = redis_client.get('moltin_access_token')
+    moltin_access_token = redis_client.hgetall('moltin:access:token')
     customer_email = update.message.text
 
     create_customer(moltin_access_token, customer_email)
@@ -267,10 +267,8 @@ def main():
     redis_url = os.getenv('REDIS_URL')
     redis_client = redis.from_url(redis_url, decode_responses=True)
 
-    moltin_client_id = os.getenv('MOLTIN_CLIENT_ID')
-    moltin_client_secret = os.getenv('MOLTIN_CLIENT_SECRET')
-    moltin_access_token = get_access_token(moltin_client_id, moltin_client_secret)
-    redis_client.set('moltin_access_token', moltin_access_token)
+    moltin_access_token = create_access_token()
+    redis_client.hset('moltin:access:token', mapping=moltin_access_token)
 
     updater = Updater(token=os.getenv('TELEGRAM_BOT_TOKEN'))
     dispatcher = updater.dispatcher

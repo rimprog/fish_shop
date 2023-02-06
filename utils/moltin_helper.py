@@ -1,20 +1,34 @@
+import os
+import time
+
 import requests
 
 
-def get_access_token(client_id, client_secret):
+def create_access_token():
     data = {
-        'client_id': client_id,
-        'client_secret': client_secret,
+        'client_id': os.getenv('MOLTIN_CLIENT_ID'),
+        'client_secret': os.getenv('MOLTIN_CLIENT_SECRET'),
         'grant_type': 'client_credentials',
     }
 
     response = requests.post('https://api.moltin.com/oauth/access_token', data=data)
     response.raise_for_status()
 
-    return response.json()['access_token']
+    return response.json()
+
+
+def refresh_token(access_token):
+    if time.time() >= int(access_token['expires']):
+        refreshed_access_token = create_access_token()
+
+        return refreshed_access_token['access_token']
+
+    return access_token['access_token']
 
 
 def get_products(access_token, product_id=None):
+    access_token = refresh_token(access_token)
+
     headers = {
         'Authorization': f'Bearer {access_token}',
     }
@@ -28,6 +42,8 @@ def get_products(access_token, product_id=None):
 
 
 def get_file(access_token, file_id):
+    access_token = refresh_token(access_token)
+
     headers = {
         'Authorization': f'Bearer {access_token}',
     }
@@ -39,6 +55,8 @@ def get_file(access_token, file_id):
 
 
 def add_product_to_cart(access_token, cart_id, product, quantity=1):
+    access_token = refresh_token(access_token)
+
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json',
@@ -59,6 +77,8 @@ def add_product_to_cart(access_token, cart_id, product, quantity=1):
 
 
 def get_cart(access_token, cart_id):
+    access_token = refresh_token(access_token)
+
     headers = {
         'Authorization': f'Bearer {access_token}',
     }
@@ -70,6 +90,8 @@ def get_cart(access_token, cart_id):
 
 
 def get_cart_items(access_token, cart_id):
+    access_token = refresh_token(access_token)
+
     headers = {
         'Authorization': f'Bearer {access_token}',
     }
@@ -81,6 +103,8 @@ def get_cart_items(access_token, cart_id):
 
 
 def remove_cart_item(access_token, cart_id, cart_item_id):
+    access_token = refresh_token(access_token)
+
     headers = {
         'Authorization': f'Bearer {access_token}',
     }
@@ -92,6 +116,8 @@ def remove_cart_item(access_token, cart_id, cart_item_id):
 
 
 def create_customer(access_token, email):
+    access_token = refresh_token(access_token)
+
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json',
@@ -113,6 +139,8 @@ def create_customer(access_token, email):
 
 
 def get_customer(access_token, customer_id):
+    access_token = refresh_token(access_token)
+
     headers = {
         'Authorization': f'Bearer {access_token}',
     }
